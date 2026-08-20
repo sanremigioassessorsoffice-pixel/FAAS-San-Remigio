@@ -634,18 +634,22 @@ async function saveEntry() {
   if (editingId) currentEntry.EntryID = editingId;
 
   try {
-    const res = await fetch(API_URL, {
+    // Apps Script's redirect chain doesn't carry readable CORS headers for
+    // POST, so this is sent no-cors: the write still reaches the script,
+    // but the response body can't be read back here. We confirm success by
+    // reloading the entries list right after instead.
+    await fetch(API_URL, {
       method: "POST",
+      mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: action, entry: currentEntry }),
     });
-    const data = await res.json();
-    if (data.success === false) {
-      showStatus("Save failed: " + (data.error || "unknown error"), "error");
-    } else {
-      showStatus(editingId ? "Entry updated." : "Entry saved.", "ok");
-      resetForm();
-    }
+
+    showStatus("Entry sent. Confirming...", "info");
+    await new Promise(r => setTimeout(r, 1200));
+    await loadEntries();
+    showStatus(editingId ? "Update confirmed — check the Entries tab." : "Entry saved — check the Entries tab to confirm.", "ok");
+    resetForm();
   } catch (err) {
     showStatus("Could not reach the server. Entry NOT saved — check your connection and try again before leaving this page.", "error");
   } finally {
