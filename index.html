@@ -56,6 +56,17 @@
   }
   .tab-btn.active { background: var(--gold); border-color: var(--gold); color: #241a06; font-weight: 700; }
   .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.12); }
+  .subbar {
+    background: #eef1f4;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 20px;
+    position: sticky;
+    top: 57px;
+    z-index: 40;
+  }
+  .subbar .tab-btn { color: var(--navy); border-color: var(--navy); }
+  .subbar .tab-btn:hover:not(.active) { background: rgba(28,58,94,0.08); }
+  .subbar .tab-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
 
   .status-banner {
     max-width: 900px;
@@ -112,6 +123,7 @@
     background: #fff;
     color: var(--text);
   }
+  input[readonly] { background: #f1f4f7; color: var(--muted); cursor: not-allowed; }
   input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--navy);
@@ -173,14 +185,8 @@
   }
   table.dyn td input:focus { background: #eaf1fb; outline: none; }
   .row-actions { text-align: center; }
-  .icon-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--danger);
-    font-size: 15px;
-    padding: 2px 6px;
-  }
+  .icon-btn { border: none; background: transparent; cursor: pointer; color: var(--danger); font-size: 15px; padding: 2px 6px; }
+  .icon-btn.print-btn { color: var(--navy); font-size: 16px; }
   .add-row-btn {
     margin-top: 8px;
     font-size: 12.5px;
@@ -243,6 +249,13 @@
     <div class="t2">Field Appraisal &amp; Assessment Sheet</div>
   </div>
   <div class="tabs">
+    <button class="tab-btn active" id="typeLandBtn" onclick="switchType('land')">Land</button>
+    <button class="tab-btn" id="typeBuildingBtn" onclick="switchType('building')">Buildings</button>
+  </div>
+</div>
+
+<div class="subbar">
+  <div class="tabs">
     <button class="tab-btn active" id="tabNewBtn" onclick="switchTab('new')">New Entry</button>
     <button class="tab-btn" id="tabListBtn" onclick="switchTab('list')">Entries</button>
   </div>
@@ -251,6 +264,8 @@
 <div id="statusBanner" class="status-banner"></div>
 
 <div class="wrap">
+
+  <div id="typeLand">
 
   <!-- ===================== NEW / EDIT ENTRY TAB ===================== -->
   <div id="tabNew">
@@ -341,9 +356,41 @@
       <div class="card-header">Property Location</div>
       <div class="card-body field-grid">
         <div class="field"><label>No./Street</label><input type="text" data-f="Prop_Street"></div>
-        <div class="field"><label>Barangay/District</label><input type="text" data-f="Prop_Barangay"></div>
-        <div class="field"><label>Municipality/City</label><input type="text" data-f="Prop_Municipality"></div>
-        <div class="field"><label>Province</label><input type="text" data-f="Prop_Province"></div>
+        <div class="field">
+          <label>Barangay/District</label>
+          <select data-f="Prop_Barangay">
+            <option value="">Select barangay...</option>
+            <option value="Poblacion">Poblacion</option>
+            <option value="Anapog">Anapog</option>
+            <option value="Argawanon">Argawanon</option>
+            <option value="Bagtic">Bagtic</option>
+            <option value="Bancasan">Bancasan</option>
+            <option value="Batad">Batad</option>
+            <option value="Busogon">Busogon</option>
+            <option value="Calambua">Calambua</option>
+            <option value="Canagahan">Canagahan</option>
+            <option value="Dapdap">Dapdap</option>
+            <option value="Gawaygaway">Gawaygaway</option>
+            <option value="Hagnaya">Hagnaya</option>
+            <option value="Kayam">Kayam</option>
+            <option value="Kinawahan">Kinawahan</option>
+            <option value="Lambusan">Lambusan</option>
+            <option value="Lawis">Lawis</option>
+            <option value="Libaong">Libaong</option>
+            <option value="Looc">Looc</option>
+            <option value="Luyang">Luyang</option>
+            <option value="Maño">Maño</option>
+            <option value="Punta">Punta</option>
+            <option value="Sab-a">Sab-a</option>
+            <option value="San Miguel">San Miguel</option>
+            <option value="Tacup">Tacup</option>
+            <option value="Tambongon">Tambongon</option>
+            <option value="To-ong">To-ong</option>
+            <option value="Victoria">Victoria</option>
+          </select>
+        </div>
+        <div class="field"><label>Municipality/City</label><input type="text" data-f="Prop_Municipality" value="San Remigio" readonly></div>
+        <div class="field"><label>Province</label><input type="text" data-f="Prop_Province" value="Cebu" readonly></div>
       </div>
     </div>
 
@@ -483,6 +530,7 @@
     <div class="btn-row">
       <button class="btn btn-primary" id="saveBtn" onclick="saveEntry()">Save Entry</button>
       <button class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+      <button class="btn btn-secondary hidden" id="printCurrentBtn" onclick="printEntry(currentEntry)">Print This Entry</button>
     </div>
   </div>
 
@@ -497,7 +545,7 @@
       <table class="entries" id="entriesTable">
         <thead>
           <tr>
-            <th>TD No.</th><th>PIN</th><th>Owner</th><th>Barangay</th><th>Encoded By</th><th>Last Edited</th>
+            <th>TD No.</th><th>PIN</th><th>Owner</th><th>Barangay</th><th>Encoded By</th><th>Last Edited</th><th></th>
           </tr>
         </thead>
         <tbody id="entriesTableBody"></tbody>
@@ -506,10 +554,359 @@
     </div>
   </div>
 
+  </div> <!-- /typeLand -->
+
+  <div id="typeBuilding" class="hidden">
+
+  <!-- ===================== BUILDING: NEW / EDIT ENTRY TAB ===================== -->
+  <div id="bTabNew">
+
+    <div class="card">
+      <div class="card-header">Transaction Information</div>
+      <div class="card-body field-grid">
+        <div class="field"><label>Tax Declaration (TD) No.</label><input type="text" data-bf="TD_No"></div>
+        <div class="field"><label>Property Identification No. (PIN)</label><input type="text" data-bf="PIN"></div>
+        <div class="field"><label>Transaction Code</label><input type="text" data-bf="Transaction_Code"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Property Registration Details</div>
+      <div class="card-body field-grid">
+        <div class="field">
+          <label>Title Type</label>
+          <div class="pill-group" data-group="Title_Type" data-mode="radio">
+            <div class="pill" data-val="CCT">CCT</div>
+            <div class="pill" data-val="TCT">TCT</div>
+          </div>
+        </div>
+        <div class="field"><label>Title No.</label><input type="text" data-bf="Title_No"></div>
+        <div class="field"><label>Date Registered</label><input type="date" data-bf="Date_Registered"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Owner Information</div>
+      <div class="card-body">
+        <div class="field-grid">
+          <div class="field full"><label>Owner/s Name (as reflected in the CCT/OCT/TCT/CLOA)</label><input type="text" data-bf="Owner_Name"></div>
+          <div class="field">
+            <label>Sex</label>
+            <div class="pill-group" data-group="Owner_Sex" data-mode="radio">
+              <div class="pill" data-val="Male">Male</div>
+              <div class="pill" data-val="Female">Female</div>
+              <div class="pill" data-val="Others">Others</div>
+            </div>
+          </div>
+          <div class="field"><label>TIN</label><input type="text" data-bf="Owner_TIN"></div>
+          <div class="field"><label>Phone/Mobile No.</label><input type="text" data-bf="Owner_Phone"></div>
+          <div class="field"><label>Email Address</label><input type="text" data-bf="Owner_Email"></div>
+          <div class="field full"><label>Mailing Address</label><textarea data-bf="Owner_Mailing_Address"></textarea></div>
+        </div>
+
+        <div class="subsection-title">Administrator / Possessor</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Type</label>
+            <div class="pill-group" data-group="Rep_Type" data-mode="radio">
+              <div class="pill" data-val="Administrator">Administrator</div>
+              <div class="pill" data-val="Possessor">Possessor</div>
+            </div>
+          </div>
+          <div class="field full"><label>Name/s</label><input type="text" data-bf="Rep_Name"></div>
+          <div class="field">
+            <label>Sex</label>
+            <div class="pill-group" data-group="Rep_Sex" data-mode="radio">
+              <div class="pill" data-val="Male">Male</div>
+              <div class="pill" data-val="Female">Female</div>
+            </div>
+          </div>
+          <div class="field"><label>TIN</label><input type="text" data-bf="Rep_TIN"></div>
+          <div class="field"><label>Phone/Mobile No.</label><input type="text" data-bf="Rep_Phone"></div>
+          <div class="field"><label>Email Address</label><input type="text" data-bf="Rep_Email"></div>
+          <div class="field full"><label>Mailing Address</label><textarea data-bf="Rep_Mailing_Address"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Property Type According to Use</div>
+      <div class="card-body">
+        <div class="pill-group" data-group="Property_Type_Use" data-mode="radio">
+          <div class="pill" data-val="Townhouse">Townhouse</div>
+          <div class="pill" data-val="Residential Condominium">Residential Condominium</div>
+          <div class="pill" data-val="Commercial Condominium">Commercial Condominium</div>
+          <div class="pill" data-val="Industrial Condominium">Industrial Condominium</div>
+          <div class="pill" data-val="Other">Other</div>
+        </div>
+        <div class="field" style="margin-top:10px;"><label>If Other, specify</label><input type="text" data-bf="Other_Type_Text"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Property Location</div>
+      <div class="card-body field-grid">
+        <div class="field"><label>No./Street</label><input type="text" data-bf="Prop_Street"></div>
+        <div class="field">
+          <label>Barangay/District</label>
+          <select data-bf="Prop_Barangay">
+            <option value="">Select barangay...</option>
+            <option value="Poblacion">Poblacion</option>
+            <option value="Anapog">Anapog</option>
+            <option value="Argawanon">Argawanon</option>
+            <option value="Bagtic">Bagtic</option>
+            <option value="Bancasan">Bancasan</option>
+            <option value="Batad">Batad</option>
+            <option value="Busogon">Busogon</option>
+            <option value="Calambua">Calambua</option>
+            <option value="Canagahan">Canagahan</option>
+            <option value="Dapdap">Dapdap</option>
+            <option value="Gawaygaway">Gawaygaway</option>
+            <option value="Hagnaya">Hagnaya</option>
+            <option value="Kayam">Kayam</option>
+            <option value="Kinawahan">Kinawahan</option>
+            <option value="Lambusan">Lambusan</option>
+            <option value="Lawis">Lawis</option>
+            <option value="Libaong">Libaong</option>
+            <option value="Looc">Looc</option>
+            <option value="Luyang">Luyang</option>
+            <option value="Maño">Maño</option>
+            <option value="Punta">Punta</option>
+            <option value="Sab-a">Sab-a</option>
+            <option value="San Miguel">San Miguel</option>
+            <option value="Tacup">Tacup</option>
+            <option value="Tambongon">Tambongon</option>
+            <option value="To-ong">To-ong</option>
+            <option value="Victoria">Victoria</option>
+          </select>
+        </div>
+        <div class="field"><label>Municipality</label><input type="text" data-bf="Prop_Municipality" value="San Remigio" readonly></div>
+        <div class="field"><label>Province</label><input type="text" data-bf="Prop_Province" value="Cebu" readonly></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Land Reference</div>
+      <div class="card-body field-grid">
+        <div class="field full"><label>Owner/s Name</label><input type="text" data-bf="LandRef_Owner_Name"></div>
+        <div class="field">
+          <label>Sex</label>
+          <div class="pill-group" data-group="LandRef_Sex" data-mode="radio">
+            <div class="pill" data-val="Male">Male</div>
+            <div class="pill" data-val="Female">Female</div>
+          </div>
+        </div>
+        <div class="field"><label>TIN</label><input type="text" data-bf="LandRef_TIN"></div>
+        <div class="field"><label>Phone/Mobile No.</label><input type="text" data-bf="LandRef_Phone"></div>
+        <div class="field"><label>Email Address</label><input type="text" data-bf="LandRef_Email"></div>
+        <div class="field full"><label>Mailing Address</label><textarea data-bf="LandRef_Mailing_Address"></textarea></div>
+        <div class="field"><label>TD No.</label><input type="text" data-bf="LandRef_TDNo"></div>
+        <div class="field"><label>PIN</label><input type="text" data-bf="LandRef_PIN"></div>
+        <div class="field"><label>Survey No.</label><input type="text" data-bf="LandRef_SurveyNo"></div>
+        <div class="field"><label>Lot No.</label><input type="text" data-bf="LandRef_LotNo"></div>
+        <div class="field"><label>Block No.</label><input type="text" data-bf="LandRef_BlockNo"></div>
+        <div class="field"><label>Title No.</label><input type="text" data-bf="LandRef_TitleNo"></div>
+        <div class="field"><label>Area (sq.m.)</label><input type="text" data-bf="LandRef_Area"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">General Information</div>
+      <div class="card-body">
+        <div class="field-grid">
+          <div class="field">
+            <label>Structural Type</label>
+            <div class="pill-group" data-group="Structural_Type" data-mode="radio">
+              <div class="pill" data-val="Type I">Type I</div>
+              <div class="pill" data-val="Type II">Type II</div>
+              <div class="pill" data-val="Type III">Type III</div>
+              <div class="pill" data-val="Type IV">Type IV</div>
+              <div class="pill" data-val="Type V">Type V</div>
+            </div>
+          </div>
+          <div class="field"><label>No. of Storey/s</label><input type="text" data-bf="No_Of_Storeys"></div>
+        </div>
+
+        <div class="subsection-title">Building Details</div>
+        <div class="field-grid">
+          <div class="field"><label>Building Classification</label><input type="text" data-bf="Building_Classification"></div>
+          <div class="field"><label>Building Permit No.</label><input type="text" data-bf="Building_Permit_No"></div>
+          <div class="field"><label>Building Age</label><input type="text" data-bf="Building_Age"></div>
+          <div class="field"><label>Date Completed</label><input type="date" data-bf="Date_Completed"></div>
+          <div class="field"><label>Occupancy Permit No.</label><input type="text" data-bf="Occupancy_Permit_No"></div>
+          <div class="field"><label>Date Occupied</label><input type="date" data-bf="Date_Occupied"></div>
+          <div class="field full"><label>Other Structure (indicate structure and floor area)</label><input type="text" data-bf="Other_Structure"></div>
+        </div>
+
+        <div class="subsection-title">Floor Levels &amp; Area</div>
+        <table class="dyn"><thead><tr><th>Floor Level</th><th>Area (sq.m.)</th><th></th></tr></thead>
+          <tbody id="floorAreasBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBRow('floorAreas')">+ Add floor</button>
+        <div class="total-line"><label>Total Building Area</label><input type="text" data-bf="Total_Building_Area"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Structural Materials</div>
+      <div class="card-body field-grid" id="structuralMaterialsGrid">
+        <!-- populated by JS: STRUCTURAL_PARTS -->
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Building Core</div>
+      <div class="card-body">
+        <table class="dyn"><thead><tr>
+          <th>Bldg. Classification</th><th>Actual Use</th><th>Total Area</th><th>Unit Const. Cost (Php)</th><th>Market Value (Php)</th><th></th>
+        </tr></thead><tbody id="buildingCoreBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBRow('buildingCore')">+ Add row</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Additional Item/s</div>
+      <div class="card-body">
+        <table class="dyn"><thead><tr>
+          <th>Particular Item</th><th>Area</th><th>Unit Const. Cost (Php)</th><th>Market Value (Php)</th><th></th>
+        </tr></thead><tbody id="additionalItemsBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBRow('additionalItems')">+ Add row</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Depreciation</div>
+      <div class="card-body">
+        <table class="dyn"><thead><tr>
+          <th>Total Market Value (Building + Additional Items)</th><th>Depreciation Rate (%)</th><th>Depreciated Value (Php)</th><th>Adjusted Market Value (Php)</th><th></th>
+        </tr></thead><tbody id="depreciationBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBRow('depreciation')">+ Add row</button>
+        <div class="total-line"><label>Total</label><input type="text" data-bf="Depreciation_Total"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Property Assessment</div>
+      <div class="card-body">
+        <table class="dyn"><thead><tr>
+          <th>Adjusted Market Value (Land + Improvement)</th><th>Assessment Level (%)</th><th>Assessed Value (Php)</th><th></th>
+        </tr></thead><tbody id="bPropertyAssessmentBody"></tbody></table>
+        <button class="add-row-btn" onclick="addBRow('bPropertyAssessment')">+ Add row</button>
+        <div class="total-line"><label>Total</label><input type="text" data-bf="PropertyAssessment_Total"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Effectivity of Assessment / Reassessment</div>
+      <div class="card-body">
+        <div class="field-grid">
+          <div class="field"><label>Year</label><input type="text" data-bf="Effectivity_Year"></div>
+          <div class="field">
+            <label>Quarter</label>
+            <div class="pill-group" data-group="Effectivity_Quarter" data-mode="radio">
+              <div class="pill" data-val="1st">1st</div>
+              <div class="pill" data-val="2nd">2nd</div>
+              <div class="pill" data-val="3rd">3rd</div>
+              <div class="pill" data-val="4th">4th</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Taxability</label>
+            <div class="pill-group" data-group="Taxability" data-mode="radio">
+              <div class="pill" data-val="Taxable">Taxable</div>
+              <div class="pill" data-val="Exempt">Exempt</div>
+            </div>
+          </div>
+          <div class="field full"><label>Basis</label><input type="text" data-bf="Basis"></div>
+          <div class="field"><label>Period Covered by Back Taxes &mdash; Year From</label><input type="text" data-bf="PeriodFrom"></div>
+          <div class="field"><label>Period Covered by Back Taxes &mdash; Year To</label><input type="text" data-bf="PeriodTo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Record of Superseded Assessment</div>
+      <div class="card-body field-grid">
+        <div class="field"><label>Previous TD No.</label><input type="text" data-bf="Superseded_TDNo"></div>
+        <div class="field"><label>PIN</label><input type="text" data-bf="Superseded_PIN"></div>
+        <div class="field"><label>Market Value</label><input type="text" data-bf="Superseded_MarketValue"></div>
+        <div class="field"><label>Assessed Value</label><input type="text" data-bf="Superseded_AssessedValue"></div>
+        <div class="field"><label>Previous Owner</label><input type="text" data-bf="Superseded_PrevOwner"></div>
+        <div class="field"><label>Effectivity of Assessment</label><input type="text" data-bf="Superseded_EffectivityDate"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Approvals</div>
+      <div class="card-body">
+        <div class="sig-grid">
+          <div class="sig-block"><div class="role">Appraised By</div>
+            <div class="field"><label>Name &amp; Position</label><input type="text" data-bf="AppraisedBy"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="AppraisedDate"></div>
+          </div>
+          <div class="sig-block"><div class="role">Assessed By</div>
+            <div class="field"><label>Name &amp; Position</label><input type="text" data-bf="AssessedBy"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="AssessedDate"></div>
+          </div>
+          <div class="sig-block"><div class="role">Recommending Approval By</div>
+            <div class="field"><label>Name &amp; Position</label><input type="text" data-bf="RecommendingApproval"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="RecommendingDate"></div>
+          </div>
+          <div class="sig-block"><div class="role">Approved By</div>
+            <div class="field"><label>Provincial/City/Municipal Assessor</label><input type="text" data-bf="ApprovedBy"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="ApprovedDate"></div>
+          </div>
+          <div class="sig-block"><div class="role">Entry in the Assessment Roll By</div>
+            <div class="field"><label>Name &amp; Position</label><input type="text" data-bf="EntryInRollBy"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="EntryInRollDate"></div>
+          </div>
+          <div class="sig-block"><div class="role">Encoded By</div>
+            <div class="field"><label>Name &amp; Position</label><input type="text" data-bf="EncodedBy"></div>
+            <div class="field"><label>Date</label><input type="date" data-bf="EncodedDate"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Memoranda</div>
+      <div class="card-body">
+        <textarea data-bf="Memoranda" style="width:100%; min-height:80px;"></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="bSaveBtn" onclick="saveBuildingEntry()">Save Entry</button>
+      <button class="btn btn-secondary" onclick="resetBuildingForm()">Clear Form</button>
+      <button class="btn btn-secondary hidden" id="bPrintCurrentBtn" onclick="printBuildingEntry(currentBEntry)">Print This Entry</button>
+    </div>
+  </div>
+
+  <!-- ===================== BUILDING: ENTRIES LIST TAB ===================== -->
+  <div id="bTabList" class="hidden">
+    <div class="list-toolbar">
+      <input type="text" id="bSearchInput" placeholder="Search by TD No., PIN, Owner, or Barangay..." oninput="renderBuildingEntriesTable()">
+      <button class="btn btn-secondary" onclick="loadBuildingEntries()">Refresh</button>
+      <button class="btn btn-primary" onclick="exportBuildingToExcel()">Export to Excel</button>
+    </div>
+    <div class="entry-table-wrap">
+      <table class="entries" id="bEntriesTable">
+        <thead>
+          <tr>
+            <th>TD No.</th><th>PIN</th><th>Owner</th><th>Barangay</th><th>Encoded By</th><th>Last Edited</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="bEntriesTableBody"></tbody>
+      </table>
+      <div id="bEmptyState" class="empty-state hidden">No entries yet. Create one from the "New Entry" tab.</div>
+    </div>
+  </div>
+
+  </div> <!-- /typeBuilding -->
+
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyNamYYbE158f5VLciigmhpKxlhru_DIybDkv5zXgfacuoJppXc1_pQcajSouO1NVWO7w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbynQ6OOgUqwuNexLHzj3BIpbFbIyKt1BNRUJlz1l-FC0_NOJ_GZUjlQvbjfl0jl-7ckUA/exec";
 
 const TABLE_CONFIGS = {
   landAppraisal: { bodyId: "landAppraisalBody", cols: ["classification","subClassification","area","unitValue","marketValue"] },
@@ -523,18 +920,85 @@ let dynTables = {};
 let allEntries = [];
 let editingId = null;
 
+let currentBEntry = {};
+let bDynTables = {};
+let allBuildingEntries = [];
+let editingBId = null;
+let currentType = "land";
+
+const B_TABLE_CONFIGS = {
+  floorAreas: { bodyId: "floorAreasBody", cols: ["floorLevel","area"] },
+  buildingCore: { bodyId: "buildingCoreBody", cols: ["classification","actualUse","totalArea","unitConstCost","marketValue"] },
+  additionalItems: { bodyId: "additionalItemsBody", cols: ["particularItem","area","unitConstCost","marketValue"] },
+  depreciation: { bodyId: "depreciationBody", cols: ["totalMarketValue","depreciationRate","depreciatedValue","adjustedMarketValue"] },
+  bPropertyAssessment: { bodyId: "bPropertyAssessmentBody", cols: ["adjustedMarketValue","assessmentLevel","assessedValue"] },
+};
+
+const STRUCTURAL_PARTS = [
+  ["Foundation","Struct_Foundation"], ["Columns","Struct_Columns"], ["Beams","Struct_Beams"],
+  ["Truss/Roof Framing","Struct_TrussRoofFraming"], ["Roof","Struct_Roof"],
+  ["Exterior Walls","Struct_ExteriorWalls"],
+  ["Exterior Finish (Front Elevation)","Struct_ExtFinishFront"],
+  ["Exterior Finish (Rear Elevation)","Struct_ExtFinishRear"],
+  ["Exterior Finish (Left Side Elev.)","Struct_ExtFinishLeft"],
+  ["Exterior Finish (Right Side Elev.)","Struct_ExtFinishRight"],
+  ["Inside Finish","Struct_InsideFinish"],
+  ["Partition Walls","Struct_PartitionWalls"],
+  ["Flooring","Struct_Flooring"],
+  ["Floor Finish","Struct_FloorFinish"],
+  ["Stairs","Struct_Stairs"],
+  ["Windows","Struct_Windows"],
+  ["Partition","Struct_Partition"],
+  ["Partition Finish","Struct_PartitionFinish"],
+  ["Door (Main)","Struct_DoorMain"],
+  ["Door (Room)","Struct_DoorRoom"],
+  ["Door (Others, specify)","Struct_DoorOthers"],
+  ["Electrical (Open/Close)","Struct_Electrical"],
+  ["Toilet & Bathroom","Struct_ToiletBathroom"],
+  ["Plumbing/Sewer","Struct_PlumbingSewer"],
+  ["Paintings","Struct_Paintings"],
+  ["Ceiling","Struct_Ceiling"],
+];
+
+(function renderStructuralMaterialsGrid() {
+  const grid = document.getElementById("structuralMaterialsGrid");
+  grid.innerHTML = STRUCTURAL_PARTS.map(([label, key]) =>
+    `<div class="field"><label>${label}</label><input type="text" data-bf="${key}"></div>`
+  ).join("");
+})();
+
 function blankDynTables() {
   return { landAppraisal: [], otherImprovements: [], marketValueAdj: [], propertyAssessment: [] };
 }
 
+function blankBDynTables() {
+  return { floorAreas: [], buildingCore: [], additionalItems: [], depreciation: [], bPropertyAssessment: [] };
+}
+
 function resetForm() {
-  currentEntry = {};
+  currentEntry = { Prop_Municipality: "San Remigio", Prop_Province: "Cebu" };
   dynTables = blankDynTables();
   editingId = null;
-  document.querySelectorAll("[data-f]").forEach(el => { el.value = ""; });
-  document.querySelectorAll(".pill").forEach(p => p.classList.remove("selected"));
+  document.querySelectorAll("#typeLand [data-f]").forEach(el => { el.value = ""; });
+  document.querySelector('#typeLand [data-f="Prop_Municipality"]').value = "San Remigio";
+  document.querySelector('#typeLand [data-f="Prop_Province"]').value = "Cebu";
+  document.querySelectorAll("#typeLand .pill").forEach(p => p.classList.remove("selected"));
   document.getElementById("saveBtn").textContent = "Save Entry";
+  document.getElementById("printCurrentBtn").classList.add("hidden");
   Object.keys(TABLE_CONFIGS).forEach(key => { addRow(key); });
+}
+
+function resetBuildingForm() {
+  currentBEntry = { Prop_Municipality: "San Remigio", Prop_Province: "Cebu" };
+  bDynTables = blankBDynTables();
+  editingBId = null;
+  document.querySelectorAll("#typeBuilding [data-bf]").forEach(el => { el.value = ""; });
+  document.querySelector('#typeBuilding [data-bf="Prop_Municipality"]').value = "San Remigio";
+  document.querySelector('#typeBuilding [data-bf="Prop_Province"]').value = "Cebu";
+  document.querySelectorAll("#typeBuilding .pill").forEach(p => p.classList.remove("selected"));
+  document.getElementById("bSaveBtn").textContent = "Save Entry";
+  document.getElementById("bPrintCurrentBtn").classList.add("hidden");
+  Object.keys(B_TABLE_CONFIGS).forEach(key => { addBRow(key); });
 }
 
 function addRow(tableKey) {
@@ -578,11 +1042,53 @@ function renderDynTable(tableKey) {
   });
 }
 
+function addBRow(tableKey) {
+  const cfg = B_TABLE_CONFIGS[tableKey];
+  const row = {};
+  cfg.cols.forEach(c => row[c] = "");
+  bDynTables[tableKey].push(row);
+  renderBDynTable(tableKey);
+}
+
+function removeBRow(tableKey, idx) {
+  bDynTables[tableKey].splice(idx, 1);
+  renderBDynTable(tableKey);
+}
+
+function renderBDynTable(tableKey) {
+  const cfg = B_TABLE_CONFIGS[tableKey];
+  const body = document.getElementById(cfg.bodyId);
+  body.innerHTML = "";
+  bDynTables[tableKey].forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    cfg.cols.forEach(col => {
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = row[col] || "";
+      input.addEventListener("input", (e) => { bDynTables[tableKey][idx][col] = e.target.value; });
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement("td");
+    actionTd.className = "row-actions";
+    const btn = document.createElement("button");
+    btn.className = "icon-btn";
+    btn.textContent = "✕";
+    btn.title = "Remove row";
+    btn.onclick = () => removeBRow(tableKey, idx);
+    actionTd.appendChild(btn);
+    tr.appendChild(actionTd);
+    body.appendChild(tr);
+  });
+}
+
 function renderAllDynTables() {
   Object.keys(TABLE_CONFIGS).forEach(renderDynTable);
 }
 
-// Pill (radio-style) groups
+// Pill (radio-style) groups — scoped to whichever form (Land vs Building) contains them,
+// since both forms reuse group names like "Rep_Type" with different option sets.
 document.querySelectorAll(".pill-group").forEach(group => {
   group.addEventListener("click", (e) => {
     const pill = e.target.closest(".pill");
@@ -590,27 +1096,55 @@ document.querySelectorAll(".pill-group").forEach(group => {
     const groupName = group.dataset.group;
     group.querySelectorAll(".pill").forEach(p => p.classList.remove("selected"));
     pill.classList.add("selected");
-    currentEntry[groupName] = pill.dataset.val;
+    const isBuilding = !!group.closest("#typeBuilding");
+    if (isBuilding) currentBEntry[groupName] = pill.dataset.val;
+    else currentEntry[groupName] = pill.dataset.val;
   });
 });
 
 // Plain fields
 document.querySelectorAll("[data-f]").forEach(el => {
   el.addEventListener("input", (e) => { currentEntry[e.target.dataset.f] = e.target.value; });
+  el.addEventListener("change", (e) => { currentEntry[e.target.dataset.f] = e.target.value; });
+});
+document.querySelectorAll("[data-bf]").forEach(el => {
+  el.addEventListener("input", (e) => { currentBEntry[e.target.dataset.bf] = e.target.value; });
+  el.addEventListener("change", (e) => { currentBEntry[e.target.dataset.bf] = e.target.value; });
 });
 
 function setPillSelection(groupName, value) {
-  const group = document.querySelector(`.pill-group[data-group="${groupName}"]`);
+  const group = document.querySelector(`#typeLand .pill-group[data-group="${groupName}"]`);
   if (!group) return;
   group.querySelectorAll(".pill").forEach(p => p.classList.toggle("selected", p.dataset.val === value));
 }
 
+function setBPillSelection(groupName, value) {
+  const group = document.querySelector(`#typeBuilding .pill-group[data-group="${groupName}"]`);
+  if (!group) return;
+  group.querySelectorAll(".pill").forEach(p => p.classList.toggle("selected", p.dataset.val === value));
+}
+
+function switchType(type) {
+  currentType = type;
+  document.getElementById("typeLand").classList.toggle("hidden", type !== "land");
+  document.getElementById("typeBuilding").classList.toggle("hidden", type !== "building");
+  document.getElementById("typeLandBtn").classList.toggle("active", type === "land");
+  document.getElementById("typeBuildingBtn").classList.toggle("active", type === "building");
+  switchTab("new");
+}
+
 function switchTab(tab) {
-  document.getElementById("tabNew").classList.toggle("hidden", tab !== "new");
-  document.getElementById("tabList").classList.toggle("hidden", tab !== "list");
+  if (currentType === "land") {
+    document.getElementById("tabNew").classList.toggle("hidden", tab !== "new");
+    document.getElementById("tabList").classList.toggle("hidden", tab !== "list");
+    if (tab === "list") loadEntries();
+  } else {
+    document.getElementById("bTabNew").classList.toggle("hidden", tab !== "new");
+    document.getElementById("bTabList").classList.toggle("hidden", tab !== "list");
+    if (tab === "list") loadBuildingEntries();
+  }
   document.getElementById("tabNewBtn").classList.toggle("active", tab === "new");
   document.getElementById("tabListBtn").classList.toggle("active", tab === "list");
-  if (tab === "list") loadEntries();
 }
 
 function showStatus(msg, type) {
@@ -642,7 +1176,7 @@ async function saveEntry() {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: action, entry: currentEntry }),
+      body: JSON.stringify({ action: action, formType: "land", entry: currentEntry }),
     });
 
     showStatus("Entry sent. Confirming...", "info");
@@ -660,7 +1194,7 @@ async function saveEntry() {
 async function loadEntries() {
   showStatus("Loading entries...", "info");
   try {
-    const res = await fetch(API_URL + "?action=list");
+    const res = await fetch(API_URL + "?action=list&formType=land");
     const data = await res.json();
     allEntries = data.entries || [];
     document.getElementById("statusBanner").classList.remove("show");
@@ -690,7 +1224,9 @@ function renderEntriesTable() {
       <td>${escapeHtml(entry.Prop_Barangay)}</td>
       <td>${escapeHtml(entry.EncodedBy)}</td>
       <td><span class="badge">${escapeHtml(entry.LastEditedAt ? formatDate(entry.LastEditedAt) : "")}</span></td>
+      <td><button class="icon-btn print-btn" title="Print this entry">🖨</button></td>
     `;
+    tr.querySelector(".print-btn").onclick = (e) => { e.stopPropagation(); printEntry(entry); };
     tr.onclick = () => loadEntryIntoForm(entry);
     body.appendChild(tr);
   });
@@ -714,6 +1250,10 @@ function loadEntryIntoForm(entry) {
     const key = el.dataset.f;
     if (entry[key] !== undefined) el.value = entry[key];
   });
+  document.querySelector('[data-f="Prop_Municipality"]').value = "San Remigio";
+  document.querySelector('[data-f="Prop_Province"]').value = "Cebu";
+  currentEntry.Prop_Municipality = "San Remigio";
+  currentEntry.Prop_Province = "Cebu";
 
   ["Registration_Status","Title_Type","Owner_Sex","Rep_Type","Rep_Sex","Taxability","Effectivity_Quarter"].forEach(g => {
     setPillSelection(g, entry[g]);
@@ -729,6 +1269,7 @@ function loadEntryIntoForm(entry) {
   if (dynTables.propertyAssessment.length === 0) addRow("propertyAssessment"); else renderDynTable("propertyAssessment");
 
   document.getElementById("saveBtn").textContent = "Update Entry";
+  document.getElementById("printCurrentBtn").classList.remove("hidden");
   switchTab("new");
   window.scrollTo(0, 0);
 }
@@ -745,8 +1286,425 @@ function exportToExcel() {
   XLSX.writeFile(wb, `FAAS_Entries_${dateStr}.xlsx`);
 }
 
+function printEntry(entry) {
+  const la = safeParseRows(entry.LandAppraisal_JSON);
+  const oi = safeParseRows(entry.OtherImprovements_JSON);
+  const mva = safeParseRows(entry.MarketValueAdj_JSON);
+  const pa = safeParseRows(entry.PropertyAssessment_JSON);
+
+  const html = `
+  <!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>FAAS ${escapeHtml(entry.TD_No || "")}</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; padding: 24px; }
+    h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
+    h2 { font-size: 11px; text-align: center; margin: 0 0 16px; font-weight: normal; color: #444; }
+    .sec-title { font-size: 11.5px; font-weight: bold; text-transform: uppercase; background: #eee; padding: 4px 8px; margin: 14px 0 6px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; margin-bottom: 6px; }
+    .kv { font-size: 12px; }
+    .kv b { display: inline; }
+    table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+    th, td { border: 1px solid #999; padding: 4px 6px; font-size: 11px; text-align: left; }
+    th { background: #f0f0f0; }
+    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .sig-block { border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
+    @page { size: legal; margin: 14mm; }
+  </style>
+  </head><body>
+    <h1>Field Appraisal and Assessment Sheet</h1>
+    <h2>Office of the Municipal Assessor &middot; San Remigio, Cebu</h2>
+
+    <div class="sec-title">Transaction Information</div>
+    <div class="grid">
+      <div class="kv"><b>TD No.:</b> ${escapeHtml(entry.TD_No)}</div>
+      <div class="kv"><b>PIN:</b> ${escapeHtml(entry.PIN)}</div>
+      <div class="kv"><b>Transaction Code:</b> ${escapeHtml(entry.Transaction_Code)}</div>
+    </div>
+
+    <div class="sec-title">Property Registration</div>
+    <div class="grid">
+      <div class="kv"><b>Status:</b> ${escapeHtml(entry.Registration_Status)}</div>
+      <div class="kv"><b>Title Type:</b> ${escapeHtml(entry.Title_Type)}</div>
+      <div class="kv"><b>Title No.:</b> ${escapeHtml(entry.Title_No)}</div>
+      <div class="kv"><b>Date Registered:</b> ${escapeHtml(entry.Date_Registered)}</div>
+      <div class="kv"><b>Survey No.:</b> ${escapeHtml(entry.Survey_No)}</div>
+      <div class="kv"><b>Lot / Block No.:</b> ${escapeHtml(entry.Lot_No)} / ${escapeHtml(entry.Block_No)}</div>
+    </div>
+
+    <div class="sec-title">Owner Information</div>
+    <div class="grid">
+      <div class="kv"><b>Name:</b> ${escapeHtml(entry.Owner_Name)}</div>
+      <div class="kv"><b>Sex:</b> ${escapeHtml(entry.Owner_Sex)}</div>
+      <div class="kv"><b>TIN:</b> ${escapeHtml(entry.Owner_TIN)}</div>
+      <div class="kv"><b>Phone:</b> ${escapeHtml(entry.Owner_Phone)}</div>
+      <div class="kv"><b>Email:</b> ${escapeHtml(entry.Owner_Email)}</div>
+      <div class="kv"><b>Mailing Address:</b> ${escapeHtml(entry.Owner_Mailing_Address)}</div>
+    </div>
+    <div class="grid">
+      <div class="kv"><b>Rep. Type:</b> ${escapeHtml(entry.Rep_Type)}</div>
+      <div class="kv"><b>Rep. Name:</b> ${escapeHtml(entry.Rep_Name)}</div>
+      <div class="kv"><b>Rep. Contact:</b> ${escapeHtml(entry.Rep_Phone)}</div>
+    </div>
+
+    <div class="sec-title">Property Location &amp; Boundaries</div>
+    <div class="grid">
+      <div class="kv"><b>Street:</b> ${escapeHtml(entry.Prop_Street)}</div>
+      <div class="kv"><b>Barangay:</b> ${escapeHtml(entry.Prop_Barangay)}</div>
+      <div class="kv"><b>Municipality:</b> ${escapeHtml(entry.Prop_Municipality)}</div>
+      <div class="kv"><b>Province:</b> ${escapeHtml(entry.Prop_Province)}</div>
+      <div class="kv"><b>North:</b> ${escapeHtml(entry.Boundary_North)}</div>
+      <div class="kv"><b>East:</b> ${escapeHtml(entry.Boundary_East)}</div>
+      <div class="kv"><b>West:</b> ${escapeHtml(entry.Boundary_West)}</div>
+      <div class="kv"><b>South:</b> ${escapeHtml(entry.Boundary_South)}</div>
+    </div>
+
+    <div class="sec-title">Land Appraisal</div>
+    ${rowsToTable(la, ["Classification","Sub-classification","Area","Unit Value","Market Value"], ["classification","subClassification","area","unitValue","marketValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.LandAppraisal_Total)}</div>
+
+    <div class="sec-title">Other Improvements</div>
+    ${rowsToTable(oi, ["Type","Quantity","Unit of Measure","Unit Value","Market Value"], ["type","quantity","unitOfMeasure","unitValue","marketValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.OtherImprovements_Total)}</div>
+
+    <div class="sec-title">Market Value Adjustment</div>
+    ${rowsToTable(mva, ["Market Value","Adj. Factor","% Adj.","Value Adj.","Adj. Market Value"], ["marketValue","adjustmentFactor","percentAdjustment","valueAdjustment","adjustmentMarketValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.MarketValueAdj_Total)}</div>
+
+    <div class="sec-title">Property Assessment</div>
+    ${rowsToTable(pa, ["Area","Actual Use","Adj. Market Value","Assessment Level %","Assessed Value"], ["area","actualUse","adjustedMarketValue","assessmentLevel","assessedValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.PropertyAssessment_Total)}</div>
+
+    <div class="sec-title">Effectivity of Assessment / Reassessment</div>
+    <div class="grid">
+      <div class="kv"><b>Year:</b> ${escapeHtml(entry.Effectivity_Year)}</div>
+      <div class="kv"><b>Quarter:</b> ${escapeHtml(entry.Effectivity_Quarter)}</div>
+      <div class="kv"><b>Taxability:</b> ${escapeHtml(entry.Taxability)}</div>
+      <div class="kv"><b>Basis:</b> ${escapeHtml(entry.Basis)}</div>
+      <div class="kv"><b>Back Taxes Period:</b> ${escapeHtml(entry.PeriodFrom)} to ${escapeHtml(entry.PeriodTo)}</div>
+    </div>
+
+    <div class="sec-title">Record of Superseded Assessment</div>
+    <div class="grid">
+      <div class="kv"><b>Previous TD No.:</b> ${escapeHtml(entry.Superseded_TDNo)}</div>
+      <div class="kv"><b>PIN:</b> ${escapeHtml(entry.Superseded_PIN)}</div>
+      <div class="kv"><b>Market Value:</b> ${escapeHtml(entry.Superseded_MarketValue)}</div>
+      <div class="kv"><b>Assessed Value:</b> ${escapeHtml(entry.Superseded_AssessedValue)}</div>
+      <div class="kv"><b>Previous Owner:</b> ${escapeHtml(entry.Superseded_PrevOwner)}</div>
+      <div class="kv"><b>Effectivity:</b> ${escapeHtml(entry.Superseded_EffectivityDate)}</div>
+    </div>
+
+    <div class="sig-grid">
+      <div class="sig-block">Appraised By<br>${escapeHtml(entry.AppraisedBy)}<br>${escapeHtml(entry.AppraisedDate)}</div>
+      <div class="sig-block">Assessed By<br>${escapeHtml(entry.AssessedBy)}<br>${escapeHtml(entry.AssessedDate)}</div>
+      <div class="sig-block">Recommending Approval<br>${escapeHtml(entry.RecommendingApproval)}<br>${escapeHtml(entry.RecommendingDate)}</div>
+      <div class="sig-block">Approved By<br>${escapeHtml(entry.ApprovedBy)}<br>${escapeHtml(entry.ApprovedDate)}</div>
+      <div class="sig-block">Entry in Assessment Roll<br>${escapeHtml(entry.EntryInRollBy)}<br>${escapeHtml(entry.EntryInRollDate)}</div>
+      <div class="sig-block">Encoded By<br>${escapeHtml(entry.EncodedBy)}<br>${escapeHtml(entry.EncodedDate)}</div>
+    </div>
+
+    ${entry.Memoranda ? `<div class="sec-title">Memoranda</div><div class="kv">${escapeHtml(entry.Memoranda)}</div>` : ""}
+
+    <script>window.onload = () => { window.print(); };<\/script>
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+function safeParseRows(json) {
+  try { return JSON.parse(json || "[]"); } catch (e) { return []; }
+}
+
+function rowsToTable(rows, headers, keys) {
+  if (!rows || rows.length === 0) return `<table><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr><tr><td colspan="${headers.length}" style="text-align:center;color:#888;">No rows</td></tr></table>`;
+  const headRow = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
+  const bodyRows = rows.map(r => `<tr>${keys.map(k => `<td>${escapeHtml(r[k])}</td>`).join("")}</tr>`).join("");
+  return `<table>${headRow}${bodyRows}</table>`;
+}
+
+// ===================== BUILDING: save / load / list / print =====================
+
+async function saveBuildingEntry() {
+  const btn = document.getElementById("bSaveBtn");
+  btn.disabled = true;
+  showStatus("Saving...", "info");
+
+  currentBEntry.FloorAreas_JSON = JSON.stringify(bDynTables.floorAreas);
+  currentBEntry.BuildingCore_JSON = JSON.stringify(bDynTables.buildingCore);
+  currentBEntry.AdditionalItems_JSON = JSON.stringify(bDynTables.additionalItems);
+  currentBEntry.Depreciation_JSON = JSON.stringify(bDynTables.depreciation);
+  currentBEntry.BPropertyAssessment_JSON = JSON.stringify(bDynTables.bPropertyAssessment);
+
+  const action = editingBId ? "update" : "create";
+  if (editingBId) currentBEntry.EntryID = editingBId;
+
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: action, formType: "building", entry: currentBEntry }),
+    });
+
+    showStatus("Entry sent. Confirming...", "info");
+    await new Promise(r => setTimeout(r, 1200));
+    await loadBuildingEntries();
+    showStatus(editingBId ? "Update confirmed — check the Entries tab." : "Entry saved — check the Entries tab to confirm.", "ok");
+    resetBuildingForm();
+  } catch (err) {
+    showStatus("Could not reach the server. Entry NOT saved — check your connection and try again before leaving this page.", "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadBuildingEntries() {
+  showStatus("Loading entries...", "info");
+  try {
+    const res = await fetch(API_URL + "?action=list&formType=building");
+    const data = await res.json();
+    allBuildingEntries = data.entries || [];
+    document.getElementById("statusBanner").classList.remove("show");
+    renderBuildingEntriesTable();
+  } catch (err) {
+    showStatus("Could not load entries. Check your connection.", "error");
+  }
+}
+
+function renderBuildingEntriesTable() {
+  const q = document.getElementById("bSearchInput").value.trim().toLowerCase();
+  const filtered = allBuildingEntries.filter(e => {
+    if (!q) return true;
+    return [e.TD_No, e.PIN, e.Owner_Name, e.Prop_Barangay].some(v => (v || "").toString().toLowerCase().includes(q));
+  });
+
+  const body = document.getElementById("bEntriesTableBody");
+  body.innerHTML = "";
+  document.getElementById("bEmptyState").classList.toggle("hidden", filtered.length > 0);
+
+  filtered.forEach(entry => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(entry.TD_No)}</td>
+      <td>${escapeHtml(entry.PIN)}</td>
+      <td>${escapeHtml(entry.Owner_Name)}</td>
+      <td>${escapeHtml(entry.Prop_Barangay)}</td>
+      <td>${escapeHtml(entry.EncodedBy)}</td>
+      <td><span class="badge">${escapeHtml(entry.LastEditedAt ? formatDate(entry.LastEditedAt) : "")}</span></td>
+      <td><button class="icon-btn print-btn" title="Print this entry">🖨</button></td>
+    `;
+    tr.querySelector(".print-btn").onclick = (e) => { e.stopPropagation(); printBuildingEntry(entry); };
+    tr.onclick = () => loadBuildingEntryIntoForm(entry);
+    body.appendChild(tr);
+  });
+}
+
+function loadBuildingEntryIntoForm(entry) {
+  resetBuildingForm();
+  editingBId = entry.EntryID;
+  currentBEntry = Object.assign({}, entry);
+
+  document.querySelectorAll("#typeBuilding [data-bf]").forEach(el => {
+    const key = el.dataset.bf;
+    if (entry[key] !== undefined) el.value = entry[key];
+  });
+  document.querySelector('#typeBuilding [data-bf="Prop_Municipality"]').value = "San Remigio";
+  document.querySelector('#typeBuilding [data-bf="Prop_Province"]').value = "Cebu";
+  currentBEntry.Prop_Municipality = "San Remigio";
+  currentBEntry.Prop_Province = "Cebu";
+
+  ["Title_Type","Owner_Sex","Rep_Type","Rep_Sex","Property_Type_Use","LandRef_Sex","Structural_Type","Effectivity_Quarter","Taxability"].forEach(g => {
+    setBPillSelection(g, entry[g]);
+  });
+
+  try { bDynTables.floorAreas = JSON.parse(entry.FloorAreas_JSON || "[]"); } catch(e) { bDynTables.floorAreas = []; }
+  try { bDynTables.buildingCore = JSON.parse(entry.BuildingCore_JSON || "[]"); } catch(e) { bDynTables.buildingCore = []; }
+  try { bDynTables.additionalItems = JSON.parse(entry.AdditionalItems_JSON || "[]"); } catch(e) { bDynTables.additionalItems = []; }
+  try { bDynTables.depreciation = JSON.parse(entry.Depreciation_JSON || "[]"); } catch(e) { bDynTables.depreciation = []; }
+  try { bDynTables.bPropertyAssessment = JSON.parse(entry.BPropertyAssessment_JSON || "[]"); } catch(e) { bDynTables.bPropertyAssessment = []; }
+  Object.keys(B_TABLE_CONFIGS).forEach(key => {
+    if (bDynTables[key].length === 0) addBRow(key); else renderBDynTable(key);
+  });
+
+  document.getElementById("bSaveBtn").textContent = "Update Entry";
+  document.getElementById("bPrintCurrentBtn").classList.remove("hidden");
+  switchTab("new");
+  window.scrollTo(0, 0);
+}
+
+function exportBuildingToExcel() {
+  if (allBuildingEntries.length === 0) {
+    showStatus("No entries to export yet.", "error");
+    return;
+  }
+  const ws = XLSX.utils.json_to_sheet(allBuildingEntries);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "FAAS Buildings");
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `FAAS_Buildings_${dateStr}.xlsx`);
+}
+
+function printBuildingEntry(entry) {
+  const fa = safeParseRows(entry.FloorAreas_JSON);
+  const bc = safeParseRows(entry.BuildingCore_JSON);
+  const ai = safeParseRows(entry.AdditionalItems_JSON);
+  const dep = safeParseRows(entry.Depreciation_JSON);
+  const pa = safeParseRows(entry.BPropertyAssessment_JSON);
+  const structRows = STRUCTURAL_PARTS.map(([label, key]) => `<div class="kv"><b>${label}:</b> ${escapeHtml(entry[key])}</div>`).join("");
+
+  const html = `
+  <!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>FAAS Building ${escapeHtml(entry.TD_No || "")}</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; padding: 24px; }
+    h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
+    h2 { font-size: 11px; text-align: center; margin: 0 0 16px; font-weight: normal; color: #444; }
+    .sec-title { font-size: 11.5px; font-weight: bold; text-transform: uppercase; background: #eee; padding: 4px 8px; margin: 14px 0 6px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; margin-bottom: 6px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; margin-bottom: 6px; }
+    .kv { font-size: 12px; }
+    .kv b { display: inline; }
+    table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+    th, td { border: 1px solid #999; padding: 4px 6px; font-size: 11px; text-align: left; }
+    th { background: #f0f0f0; }
+    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .sig-block { border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
+    @page { size: legal; margin: 14mm; }
+  </style>
+  </head><body>
+    <h1>Field Appraisal and Assessment Sheet &mdash; Building and Other Structures</h1>
+    <h2>Office of the Municipal Assessor &middot; San Remigio, Cebu</h2>
+
+    <div class="sec-title">Transaction Information</div>
+    <div class="grid">
+      <div class="kv"><b>TD No.:</b> ${escapeHtml(entry.TD_No)}</div>
+      <div class="kv"><b>PIN:</b> ${escapeHtml(entry.PIN)}</div>
+      <div class="kv"><b>Transaction Code:</b> ${escapeHtml(entry.Transaction_Code)}</div>
+    </div>
+
+    <div class="sec-title">Property Registration</div>
+    <div class="grid">
+      <div class="kv"><b>Title Type:</b> ${escapeHtml(entry.Title_Type)}</div>
+      <div class="kv"><b>Title No.:</b> ${escapeHtml(entry.Title_No)}</div>
+      <div class="kv"><b>Date Registered:</b> ${escapeHtml(entry.Date_Registered)}</div>
+    </div>
+
+    <div class="sec-title">Owner Information</div>
+    <div class="grid">
+      <div class="kv"><b>Name:</b> ${escapeHtml(entry.Owner_Name)}</div>
+      <div class="kv"><b>Sex:</b> ${escapeHtml(entry.Owner_Sex)}</div>
+      <div class="kv"><b>TIN:</b> ${escapeHtml(entry.Owner_TIN)}</div>
+      <div class="kv"><b>Phone:</b> ${escapeHtml(entry.Owner_Phone)}</div>
+      <div class="kv"><b>Email:</b> ${escapeHtml(entry.Owner_Email)}</div>
+      <div class="kv"><b>Mailing Address:</b> ${escapeHtml(entry.Owner_Mailing_Address)}</div>
+    </div>
+    <div class="grid">
+      <div class="kv"><b>Rep. Type:</b> ${escapeHtml(entry.Rep_Type)}</div>
+      <div class="kv"><b>Rep. Name:</b> ${escapeHtml(entry.Rep_Name)}</div>
+      <div class="kv"><b>Rep. Contact:</b> ${escapeHtml(entry.Rep_Phone)}</div>
+    </div>
+
+    <div class="sec-title">Property Type According to Use</div>
+    <div class="kv">${escapeHtml(entry.Property_Type_Use)}${entry.Other_Type_Text ? " — " + escapeHtml(entry.Other_Type_Text) : ""}</div>
+
+    <div class="sec-title">Property Location</div>
+    <div class="grid">
+      <div class="kv"><b>Street:</b> ${escapeHtml(entry.Prop_Street)}</div>
+      <div class="kv"><b>Barangay:</b> ${escapeHtml(entry.Prop_Barangay)}</div>
+      <div class="kv"><b>Municipality:</b> ${escapeHtml(entry.Prop_Municipality)}</div>
+      <div class="kv"><b>Province:</b> ${escapeHtml(entry.Prop_Province)}</div>
+    </div>
+
+    <div class="sec-title">Land Reference</div>
+    <div class="grid">
+      <div class="kv"><b>Owner:</b> ${escapeHtml(entry.LandRef_Owner_Name)}</div>
+      <div class="kv"><b>TD No.:</b> ${escapeHtml(entry.LandRef_TDNo)}</div>
+      <div class="kv"><b>PIN:</b> ${escapeHtml(entry.LandRef_PIN)}</div>
+      <div class="kv"><b>Survey No.:</b> ${escapeHtml(entry.LandRef_SurveyNo)}</div>
+      <div class="kv"><b>Lot / Block No.:</b> ${escapeHtml(entry.LandRef_LotNo)} / ${escapeHtml(entry.LandRef_BlockNo)}</div>
+      <div class="kv"><b>Title No.:</b> ${escapeHtml(entry.LandRef_TitleNo)}</div>
+      <div class="kv"><b>Area (sq.m.):</b> ${escapeHtml(entry.LandRef_Area)}</div>
+    </div>
+
+    <div class="sec-title">General Information</div>
+    <div class="grid">
+      <div class="kv"><b>Structural Type:</b> ${escapeHtml(entry.Structural_Type)}</div>
+      <div class="kv"><b>No. of Storey/s:</b> ${escapeHtml(entry.No_Of_Storeys)}</div>
+      <div class="kv"><b>Total Building Area:</b> ${escapeHtml(entry.Total_Building_Area)}</div>
+      <div class="kv"><b>Building Classification:</b> ${escapeHtml(entry.Building_Classification)}</div>
+      <div class="kv"><b>Building Permit No.:</b> ${escapeHtml(entry.Building_Permit_No)}</div>
+      <div class="kv"><b>Building Age:</b> ${escapeHtml(entry.Building_Age)}</div>
+      <div class="kv"><b>Date Completed:</b> ${escapeHtml(entry.Date_Completed)}</div>
+      <div class="kv"><b>Occupancy Permit No.:</b> ${escapeHtml(entry.Occupancy_Permit_No)}</div>
+      <div class="kv"><b>Date Occupied:</b> ${escapeHtml(entry.Date_Occupied)}</div>
+      <div class="kv"><b>Other Structure:</b> ${escapeHtml(entry.Other_Structure)}</div>
+    </div>
+
+    <div class="sec-title">Floor Levels &amp; Area</div>
+    ${rowsToTable(fa, ["Floor Level","Area (sq.m.)"], ["floorLevel","area"])}
+
+    <div class="sec-title">Structural Materials</div>
+    <div class="grid2">${structRows}</div>
+
+    <div class="sec-title">Building Core</div>
+    ${rowsToTable(bc, ["Bldg. Classification","Actual Use","Total Area","Unit Const. Cost","Market Value"], ["classification","actualUse","totalArea","unitConstCost","marketValue"])}
+
+    <div class="sec-title">Additional Item/s</div>
+    ${rowsToTable(ai, ["Particular Item","Area","Unit Const. Cost","Market Value"], ["particularItem","area","unitConstCost","marketValue"])}
+
+    <div class="sec-title">Depreciation</div>
+    ${rowsToTable(dep, ["Total Market Value","Depreciation Rate %","Depreciated Value","Adjusted Market Value"], ["totalMarketValue","depreciationRate","depreciatedValue","adjustedMarketValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.Depreciation_Total)}</div>
+
+    <div class="sec-title">Property Assessment</div>
+    ${rowsToTable(pa, ["Adjusted Market Value","Assessment Level %","Assessed Value"], ["adjustedMarketValue","assessmentLevel","assessedValue"])}
+    <div class="kv"><b>Total:</b> ${escapeHtml(entry.PropertyAssessment_Total)}</div>
+
+    <div class="sec-title">Effectivity of Assessment / Reassessment</div>
+    <div class="grid">
+      <div class="kv"><b>Year:</b> ${escapeHtml(entry.Effectivity_Year)}</div>
+      <div class="kv"><b>Quarter:</b> ${escapeHtml(entry.Effectivity_Quarter)}</div>
+      <div class="kv"><b>Taxability:</b> ${escapeHtml(entry.Taxability)}</div>
+      <div class="kv"><b>Basis:</b> ${escapeHtml(entry.Basis)}</div>
+      <div class="kv"><b>Back Taxes Period:</b> ${escapeHtml(entry.PeriodFrom)} to ${escapeHtml(entry.PeriodTo)}</div>
+    </div>
+
+    <div class="sec-title">Record of Superseded Assessment</div>
+    <div class="grid">
+      <div class="kv"><b>Previous TD No.:</b> ${escapeHtml(entry.Superseded_TDNo)}</div>
+      <div class="kv"><b>PIN:</b> ${escapeHtml(entry.Superseded_PIN)}</div>
+      <div class="kv"><b>Market Value:</b> ${escapeHtml(entry.Superseded_MarketValue)}</div>
+      <div class="kv"><b>Assessed Value:</b> ${escapeHtml(entry.Superseded_AssessedValue)}</div>
+      <div class="kv"><b>Previous Owner:</b> ${escapeHtml(entry.Superseded_PrevOwner)}</div>
+      <div class="kv"><b>Effectivity:</b> ${escapeHtml(entry.Superseded_EffectivityDate)}</div>
+    </div>
+
+    <div class="sig-grid">
+      <div class="sig-block">Appraised By<br>${escapeHtml(entry.AppraisedBy)}<br>${escapeHtml(entry.AppraisedDate)}</div>
+      <div class="sig-block">Assessed By<br>${escapeHtml(entry.AssessedBy)}<br>${escapeHtml(entry.AssessedDate)}</div>
+      <div class="sig-block">Recommending Approval<br>${escapeHtml(entry.RecommendingApproval)}<br>${escapeHtml(entry.RecommendingDate)}</div>
+      <div class="sig-block">Approved By<br>${escapeHtml(entry.ApprovedBy)}<br>${escapeHtml(entry.ApprovedDate)}</div>
+      <div class="sig-block">Entry in Assessment Roll<br>${escapeHtml(entry.EntryInRollBy)}<br>${escapeHtml(entry.EntryInRollDate)}</div>
+      <div class="sig-block">Encoded By<br>${escapeHtml(entry.EncodedBy)}<br>${escapeHtml(entry.EncodedDate)}</div>
+    </div>
+
+    ${entry.Memoranda ? `<div class="sec-title">Memoranda</div><div class="kv">${escapeHtml(entry.Memoranda)}</div>` : ""}
+
+    <script>window.onload = () => { window.print(); };<\/script>
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
 // init
 resetForm();
+resetBuildingForm();
+
 </script>
 </body>
 </html>
