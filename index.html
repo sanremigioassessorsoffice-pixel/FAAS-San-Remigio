@@ -406,6 +406,17 @@
     </div>
 
     <div class="card">
+      <div class="card-header">Land Sketch (Not necessarily drawn to scale)</div>
+      <div class="card-body">
+        <input type="file" accept="image/*" id="landSketchInput" onchange="handleLandSketchUpload(event)">
+        <div id="landSketchPreviewWrap" class="hidden" style="margin-top:10px;">
+          <img id="landSketchPreview" style="max-width:280px; max-height:220px; border:1px solid var(--line); border-radius:4px; display:block;">
+          <button class="btn btn-secondary" style="margin-top:8px;" onclick="clearLandSketch()">Remove Sketch</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-header">Land Appraisal</div>
       <div class="card-body">
         <table class="dyn"><thead><tr>
@@ -1191,7 +1202,7 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyNamYYbE158f5VLciigmhpKxlhru_DIybDkv5zXgfacuoJppXc1_pQcajSouO1NVWO7w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbynQ6OOgUqwuNexLHzj3BIpbFbIyKt1BNRUJlz1l-FC0_NOJ_GZUjlQvbjfl0jl-7ckUA/exec";
 
 const TABLE_CONFIGS = {
   landAppraisal: { bodyId: "landAppraisalBody", cols: ["classification","subClassification","area","unitValue","marketValue"] },
@@ -1285,7 +1296,55 @@ function resetForm() {
   document.querySelectorAll("#typeLand .pill").forEach(p => p.classList.remove("selected"));
   document.getElementById("saveBtn").textContent = "Save Entry";
   document.getElementById("printCurrentBtn").classList.add("hidden");
+  clearLandSketch();
   Object.keys(TABLE_CONFIGS).forEach(key => { addRow(key); });
+}
+
+function handleLandSketchUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    img.onload = () => {
+      // Downscale + compress so the image stays under a Google Sheets cell's ~50,000-char limit.
+      // Start at a reasonable size/quality and step down if the result is still too large.
+      let maxDim = 600, quality = 0.6;
+      let dataUrl = "";
+      for (let attempt = 0; attempt < 5; attempt++) {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        dataUrl = canvas.toDataURL("image/jpeg", quality);
+        if (dataUrl.length < 42000) break;
+        maxDim = Math.round(maxDim * 0.75);
+        quality = Math.max(0.35, quality - 0.1);
+      }
+      if (dataUrl.length >= 42000) {
+        showStatus("That sketch photo is too detailed to store — try a simpler or lower-resolution photo.", "error");
+        return;
+      }
+      currentEntry.Land_Sketch_Image = dataUrl;
+      document.getElementById("landSketchPreview").src = dataUrl;
+      document.getElementById("landSketchPreviewWrap").classList.remove("hidden");
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearLandSketch() {
+  currentEntry.Land_Sketch_Image = "";
+  document.getElementById("landSketchInput").value = "";
+  document.getElementById("landSketchPreview").src = "";
+  document.getElementById("landSketchPreviewWrap").classList.add("hidden");
 }
 
 function resetBuildingForm() {
@@ -1607,7 +1666,24 @@ function formatDate(iso) {
 
 function escapeHtml(v) {
   if (v === undefined || v === null) return "";
-  return String(v).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  let s = String(v);
+  // Google Sheets returns date-typed cells as full ISO timestamps (e.g. "2024-05-01T16:00:00.000Z")
+  // even though the form only collects a plain date — strip the time portion for display.
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s)) {
+    s = s.slice(0, 10);
+  }
+  return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function formatDateOnly(v) {
+  return escapeHtml(v);
+}
+
+function formatCurrency(v) {
+  if (v === undefined || v === null || v === "") return "";
+  const num = Number(String(v).replace(/[₱,\s]/g, ""));
+  if (isNaN(num)) return escapeHtml(v);
+  return "₱" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function loadEntryIntoForm(entry) {
@@ -1636,6 +1712,11 @@ function loadEntryIntoForm(entry) {
   if (dynTables.otherImprovements.length === 0) addRow("otherImprovements"); else renderDynTable("otherImprovements");
   if (dynTables.marketValueAdj.length === 0) addRow("marketValueAdj"); else renderDynTable("marketValueAdj");
   if (dynTables.propertyAssessment.length === 0) addRow("propertyAssessment"); else renderDynTable("propertyAssessment");
+
+  if (entry.Land_Sketch_Image) {
+    document.getElementById("landSketchPreview").src = entry.Land_Sketch_Image;
+    document.getElementById("landSketchPreviewWrap").classList.remove("hidden");
+  }
 
   document.getElementById("saveBtn").textContent = "Update Entry";
   document.getElementById("printCurrentBtn").classList.remove("hidden");
@@ -1681,17 +1762,56 @@ const PRINT_FORM_CSS = `
   .sig-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14pt; margin-top: 14pt; }
   .sig-line { border-top: 1px solid #000; text-align: center; font-size: 9.5pt; padding-top: 3pt; }
   .sig-name { font-style: italic; font-size: 10.5pt; min-height: 14pt; }
+  .sig-stack-label { font-weight: bold; font-size: 10.5pt; margin-bottom: 3pt; }
+  .sig-stack-fillrow { display: flex; gap: 6pt; }
+  .sig-stack-fillrow .fname { flex: 1; border-bottom: 1px solid #000; min-height: 11pt; padding: 0 2pt; }
+  .sig-stack-fillrow .fdate { width: 60pt; border-bottom: 1px solid #000; min-height: 11pt; text-align: center; padding: 0 2pt; }
+  .sig-stack-caption { display: flex; gap: 6pt; font-style: italic; font-size: 8.7pt; margin-top: 2pt; }
+  .sig-stack-caption .cname { flex: 1; text-align: center; }
+  .sig-stack-caption .cdate { width: 60pt; text-align: center; }
+  .sig-inline-row { display: flex; align-items: baseline; gap: 6pt; margin-bottom: 2pt; }
+  .sig-inline-row .ilabel { white-space: nowrap; }
+  .sig-inline-row .ilabel.bold { font-weight: bold; }
+  .sig-inline-row .fname { flex: 1; border-bottom: 1px solid #000; min-height: 11pt; padding: 0 2pt; }
+  .sig-inline-row .fdate { width: 80pt; border-bottom: 1px solid #000; min-height: 11pt; text-align: center; padding: 0 2pt; }
+  .sig-inline-caption { display: flex; gap: 6pt; font-style: italic; font-size: 8.7pt; }
+  .sig-inline-caption .cname { flex: 1; text-align: center; }
+  .sig-inline-caption .cdate { width: 80pt; text-align: center; }
+  .sig-inline-block { margin-bottom: 10pt; }
   @page { size: A4; margin: 1in; }
 `;
 
-function cbHtml(options, selectedValue) {
-  return `<div class="cb-row">` + options.map(opt =>
+function cbHtml(label, options, selectedValue) {
+  return `<div class="cb-row"><span class="lbl" style="margin-right:4pt;">${label}:</span>` + options.map(opt =>
     `<span class="cb-item">${opt === selectedValue ? "☑" : "☐"} ${opt}</span>`
   ).join("") + `</div>`;
 }
 
 function lineField(label, value, wide) {
   return `<div class="line-field${wide ? "" : ""}"><span class="lbl">${label}:</span><span class="fill">${escapeHtml(value)}</span></div>`;
+}
+
+// Stacked signature block: bold label on its own line above a name+date fill line
+// (used for Appraised By / Assessed By / Recommending Approval By — 3-column row)
+function sigStack(label, name, date) {
+  return `<div>
+    <div class="sig-stack-label">${label}</div>
+    <div class="sig-stack-fillrow"><span class="fname">${escapeHtml(name)}</span><span class="fdate">${formatDateOnly(date)}</span></div>
+    <div class="sig-stack-caption"><span class="cname">Name &amp; Position</span><span class="cdate">Date</span></div>
+  </div>`;
+}
+
+// Inline signature block: label + fill line on the same row
+// (used for Approved By / Entry in the Assessment Roll By / Encoded By)
+function sigInline(label, bold, name, date, nameCaption) {
+  return `<div class="sig-inline-block">
+    <div class="sig-inline-row">
+      <span class="ilabel${bold ? " bold" : ""}">${label}</span>
+      <span class="fname">${escapeHtml(name)}</span>
+      <span class="fdate">${formatDateOnly(date)}</span>
+    </div>
+    <div class="sig-inline-caption"><span class="cname">${nameCaption}</span><span class="cdate">Date</span></div>
+  </div>`;
 }
 
 function openPrintWindow(title, bodyHtml) {
@@ -1714,6 +1834,7 @@ function printEntry(entry) {
   const html = `
     <div class="doc-title">Field Appraisal and Assessment Sheet &mdash; Land/Other Improvements</div>
     <div class="doc-subtitle">Office of the Municipal Assessor &middot; San Remigio, Cebu</div>
+    <div class="priv-notice"><b>Data Privacy Notice:</b> By submitting/providing your property information (including but not limited to name, contact details, property address, title number, and property documents), you acknowledge and authorize the government to collect, process, and store your personal data.</div>
 
     <div class="box">
       <div class="box-title">Transaction Information</div>
@@ -1727,8 +1848,8 @@ function printEntry(entry) {
     <div class="box">
       <div class="box-title">Property Registration Details</div>
       <div class="box-body">
-        ${cbHtml(["Titled","Untitled"], entry.Registration_Status)}
-        ${cbHtml(["OCT","TCT","CLOA"], entry.Title_Type)}
+        ${cbHtml("Registration Status", ["Titled","Untitled"], entry.Registration_Status)}
+        ${cbHtml("Title Type", ["OCT","TCT","CLOA"], entry.Title_Type)}
         <div class="two-col">
           ${lineField("Title No.", entry.Title_No)}
           ${lineField("Date Registered", entry.Date_Registered)}
@@ -1743,7 +1864,7 @@ function printEntry(entry) {
       <div class="box-title">Owner Information</div>
       <div class="box-body">
         ${lineField("Owner/s Name (as reflected in the OCT/TCT/CLOA)", entry.Owner_Name)}
-        ${cbHtml(["Male","Female","Others"], entry.Owner_Sex)}
+        ${cbHtml("Sex", ["Male","Female","Others"], entry.Owner_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.Owner_TIN)}
           ${lineField("Phone/Mobile No.", entry.Owner_Phone)}
@@ -1756,9 +1877,9 @@ function printEntry(entry) {
     <div class="box">
       <div class="box-title">Administrator / Beneficial User / Possessor</div>
       <div class="box-body">
-        ${cbHtml(["Administrator","Beneficial User","Possessor"], entry.Rep_Type)}
+        ${cbHtml("Type", ["Administrator","Beneficial User","Possessor"], entry.Rep_Type)}
         ${lineField("Name/s", entry.Rep_Name)}
-        ${cbHtml(["Male","Female"], entry.Rep_Sex)}
+        ${cbHtml("Sex", ["Male","Female"], entry.Rep_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.Rep_TIN)}
           ${lineField("Phone/Mobile No.", entry.Rep_Phone)}
@@ -1778,45 +1899,55 @@ function printEntry(entry) {
       </div>
     </div>
 
-    <div class="box">
-      <div class="box-title">Property Boundaries</div>
-      <div class="box-body two-col">
-        ${lineField("North", entry.Boundary_North)}
-        ${lineField("East", entry.Boundary_East)}
-        ${lineField("West", entry.Boundary_West)}
-        ${lineField("South", entry.Boundary_South)}
+    <div class="box" style="page-break-inside: avoid;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr;">
+        <div style="border-right: 1px solid #000;">
+          <div class="box-title">Property Boundaries</div>
+          <div class="box-body">
+            ${lineField("North", entry.Boundary_North)}
+            ${lineField("East", entry.Boundary_East)}
+            ${lineField("West", entry.Boundary_West)}
+            ${lineField("South", entry.Boundary_South)}
+          </div>
+        </div>
+        <div>
+          <div class="box-title">Land Sketch (Not necessarily drawn to scale)</div>
+          <div class="box-body" style="min-height: 140pt; display: flex; align-items: center; justify-content: center;">
+            ${entry.Land_Sketch_Image ? `<img src="${entry.Land_Sketch_Image}" style="max-width:100%; max-height:130pt;">` : ""}
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="box">
       <div class="box-title">Land Appraisal</div>
       <div class="box-body">
-        ${rowsToTable(la, ["Classification","Sub-classification","Area","Unit Value (Php)","Market Value (Php)"], ["classification","subClassification","area","unitValue","marketValue"])}
-        <div class="total-line">Total: ${escapeHtml(entry.LandAppraisal_Total)}</div>
+        ${rowsToTable(la, ["Classification","Sub-classification","Area","Unit Value (Php)","Market Value (Php)"], ["classification","subClassification","area","unitValue","marketValue"], ["unitValue","marketValue"])}
+        <div class="total-line">Total: ${formatCurrency(entry.LandAppraisal_Total)}</div>
       </div>
     </div>
 
     <div class="box">
       <div class="box-title">Other Improvements</div>
       <div class="box-body">
-        ${rowsToTable(oi, ["Type of Improvement","Quantity","Unit of Measure","Unit Value (Php)","Market Value (Php)"], ["type","quantity","unitOfMeasure","unitValue","marketValue"])}
-        <div class="total-line">Total: ${escapeHtml(entry.OtherImprovements_Total)}</div>
+        ${rowsToTable(oi, ["Type of Improvement","Quantity","Unit of Measure","Unit Value (Php)","Market Value (Php)"], ["type","quantity","unitOfMeasure","unitValue","marketValue"], ["unitValue","marketValue"])}
+        <div class="total-line">Total: ${formatCurrency(entry.OtherImprovements_Total)}</div>
       </div>
     </div>
 
     <div class="box">
       <div class="box-title">Market Value Adjustment</div>
       <div class="box-body">
-        ${rowsToTable(mva, ["Market Value","Adjustment Factor","Percent (%) Adjustment","Value Adjustment","Adjustment Market Value"], ["marketValue","adjustmentFactor","percentAdjustment","valueAdjustment","adjustmentMarketValue"])}
-        <div class="total-line">Total: ${escapeHtml(entry.MarketValueAdj_Total)}</div>
+        ${rowsToTable(mva, ["Market Value","Adjustment Factor","Percent (%) Adjustment","Value Adjustment","Adjustment Market Value"], ["marketValue","adjustmentFactor","percentAdjustment","valueAdjustment","adjustmentMarketValue"], ["marketValue","valueAdjustment","adjustmentMarketValue"])}
+        <div class="total-line">Total: ${formatCurrency(entry.MarketValueAdj_Total)}</div>
       </div>
     </div>
 
     <div class="box">
       <div class="box-title">Property Assessment</div>
       <div class="box-body">
-        ${rowsToTable(pa, ["Area","Actual Use","Adjusted Market Value","Assessment Level (%)","Assessed Value"], ["area","actualUse","adjustedMarketValue","assessmentLevel","assessedValue"])}
-        <div class="total-line">Total: ${escapeHtml(entry.PropertyAssessment_Total)}</div>
+        ${rowsToTable(pa, ["Area","Actual Use","Adjusted Market Value","Assessment Level (%)","Assessed Value"], ["area","actualUse","adjustedMarketValue","assessmentLevel","assessedValue"], ["adjustedMarketValue","assessedValue"])}
+        <div class="total-line">Total: ${formatCurrency(entry.PropertyAssessment_Total)}</div>
       </div>
     </div>
 
@@ -1824,8 +1955,8 @@ function printEntry(entry) {
       <div class="box-title">Effectivity of Assessment / Reassessment</div>
       <div class="box-body">
         ${lineField("Year", entry.Effectivity_Year)}
-        ${cbHtml(["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
-        ${cbHtml(["Taxable","Exempt"], entry.Taxability)}
+        ${cbHtml("Quarter", ["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
+        ${cbHtml("Taxability", ["Taxable","Exempt"], entry.Taxability)}
         ${lineField("Basis", entry.Basis)}
         <div class="two-col">
           ${lineField("Back Taxes Period — From", entry.PeriodFrom)}
@@ -1847,9 +1978,9 @@ function printEntry(entry) {
     </div>
 
     <div class="sig-row">
-      <div><div class="sig-name">${escapeHtml(entry.AppraisedBy)}</div><div class="sig-line">Appraised By &middot; ${escapeHtml(entry.AppraisedDate)}</div></div>
-      <div><div class="sig-name">${escapeHtml(entry.AssessedBy)}</div><div class="sig-line">Assessed By &middot; ${escapeHtml(entry.AssessedDate)}</div></div>
-      <div><div class="sig-name">${escapeHtml(entry.RecommendingApproval)}</div><div class="sig-line">Recommending Approval By &middot; ${escapeHtml(entry.RecommendingDate)}</div></div>
+      ${sigStack("APPRAISED BY:", entry.AppraisedBy, entry.AppraisedDate)}
+      ${sigStack("ASSESSED BY:", entry.AssessedBy, entry.AssessedDate)}
+      ${sigStack("RECOMMENDING APPROVAL BY:", entry.RecommendingApproval, entry.RecommendingDate)}
     </div>
 
     <div class="box">
@@ -1857,11 +1988,9 @@ function printEntry(entry) {
       <div class="box-body">${escapeHtml(entry.Memoranda) || "&nbsp;"}</div>
     </div>
 
-    <div class="sig-row">
-      <div><div class="sig-name">${escapeHtml(entry.ApprovedBy)}</div><div class="sig-line">Approved By (Municipal Assessor) &middot; ${escapeHtml(entry.ApprovedDate)}</div></div>
-      <div><div class="sig-name">${escapeHtml(entry.EntryInRollBy)}</div><div class="sig-line">Entry in the Assessment Roll By &middot; ${escapeHtml(entry.EntryInRollDate)}</div></div>
-      <div><div class="sig-name">${escapeHtml(entry.EncodedBy)}</div><div class="sig-line">Encoded By &middot; ${escapeHtml(entry.EncodedDate)}</div></div>
-    </div>
+    ${sigInline("APPROVED BY:", true, entry.ApprovedBy, entry.ApprovedDate, "Municipal Assessor")}
+    ${sigInline("Entry in the Assessment Roll by:", false, entry.EntryInRollBy, entry.EntryInRollDate, "Name &amp; Position")}
+    ${sigInline("Encoded by:", false, entry.EncodedBy, entry.EncodedDate, "Name &amp; Position")}
   `;
 
   openPrintWindow(`FAAS ${entry.TD_No || ""}`, html);
@@ -1871,11 +2000,15 @@ function safeParseRows(json) {
   try { return JSON.parse(json || "[]"); } catch (e) { return []; }
 }
 
-function rowsToTable(rows, headers, keys) {
-  if (!rows || rows.length === 0) return `<table><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr><tr><td colspan="${headers.length}" style="text-align:center;color:#888;">No rows</td></tr></table>`;
+function rowsToTable(rows, headers, keys, currencyCols) {
+  currencyCols = currencyCols || [];
+  const displayRows = (rows || []).slice();
+  while (displayRows.length < 3) displayRows.push({});
   const headRow = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
-  const bodyRows = rows.map(r => `<tr>${keys.map(k => `<td>${escapeHtml(r[k])}</td>`).join("")}</tr>`).join("");
-  return `<table>${headRow}${bodyRows}</table>`;
+  const bodyRows = displayRows.map(r => `<tr>${keys.map(k =>
+    `<td>${currencyCols.includes(k) ? formatCurrency(r[k]) : escapeHtml(r[k])}</td>`
+  ).join("")}</tr>`).join("");
+  return `<table class="formtable">${headRow}${bodyRows}</table>`;
 }
 
 // ===================== BUILDING: save / load / list / print =====================
@@ -2013,6 +2146,7 @@ function printBuildingEntry(entry) {
   const html = `
     <div class="doc-title">Field Appraisal and Assessment Sheet &mdash; Building and Other Structures</div>
     <div class="doc-subtitle">Office of the Municipal Assessor &middot; San Remigio, Cebu</div>
+    <div class="priv-notice"><b>Data Privacy Notice:</b> By submitting/providing your property information (including but not limited to name, contact details, property address, title number, and property documents), you acknowledge and authorize the government to collect, process, and store your personal data.</div>
 
     <div class="box">
       <div class="box-title">Transaction Information</div>
@@ -2026,7 +2160,7 @@ function printBuildingEntry(entry) {
     <div class="box">
       <div class="box-title">Property Registration Details</div>
       <div class="box-body">
-        ${cbHtml(["CCT","TCT"], entry.Title_Type)}
+        ${cbHtml("Title Type", ["CCT","TCT"], entry.Title_Type)}
         <div class="two-col">
           ${lineField("Title No.", entry.Title_No)}
           ${lineField("Date Registered", entry.Date_Registered)}
@@ -2038,7 +2172,7 @@ function printBuildingEntry(entry) {
       <div class="box-title">Owner Information</div>
       <div class="box-body">
         ${lineField("Owner/s Name (as reflected in the CCT/OCT/TCT/CLOA)", entry.Owner_Name)}
-        ${cbHtml(["Male","Female","Others"], entry.Owner_Sex)}
+        ${cbHtml("Sex", ["Male","Female","Others"], entry.Owner_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.Owner_TIN)}
           ${lineField("Phone/Mobile No.", entry.Owner_Phone)}
@@ -2051,9 +2185,9 @@ function printBuildingEntry(entry) {
     <div class="box">
       <div class="box-title">Administrator / Possessor</div>
       <div class="box-body">
-        ${cbHtml(["Administrator","Possessor"], entry.Rep_Type)}
+        ${cbHtml("Type", ["Administrator","Possessor"], entry.Rep_Type)}
         ${lineField("Name/s", entry.Rep_Name)}
-        ${cbHtml(["Male","Female"], entry.Rep_Sex)}
+        ${cbHtml("Sex", ["Male","Female"], entry.Rep_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.Rep_TIN)}
           ${lineField("Phone/Mobile No.", entry.Rep_Phone)}
@@ -2064,7 +2198,7 @@ function printBuildingEntry(entry) {
     <div class="box">
       <div class="box-title">Property Type According to Use</div>
       <div class="box-body">
-        ${cbHtml(["Townhouse","Residential Condominium","Commercial Condominium","Industrial Condominium","Other"], entry.Property_Type_Use)}
+        ${cbHtml("Type", ["Townhouse","Residential Condominium","Commercial Condominium","Industrial Condominium","Other"], entry.Property_Type_Use)}
         ${entry.Other_Type_Text ? lineField("If Other, specify", entry.Other_Type_Text) : ""}
       </div>
     </div>
@@ -2095,7 +2229,7 @@ function printBuildingEntry(entry) {
     <div class="box">
       <div class="box-title">General Information</div>
       <div class="box-body">
-        ${cbHtml(["Type I","Type II","Type III","Type IV","Type V"], entry.Structural_Type)}
+        ${cbHtml("Structural Type", ["Type I","Type II","Type III","Type IV","Type V"], entry.Structural_Type)}
         <div class="two-col">
           ${lineField("No. of Storey/s", entry.No_Of_Storeys)}
           ${lineField("Total Building Area", entry.Total_Building_Area)}
@@ -2159,8 +2293,8 @@ function printBuildingEntry(entry) {
       <div class="box-title">Effectivity of Assessment / Reassessment</div>
       <div class="box-body">
         ${lineField("Year", entry.Effectivity_Year)}
-        ${cbHtml(["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
-        ${cbHtml(["Taxable","Exempt"], entry.Taxability)}
+        ${cbHtml("Quarter", ["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
+        ${cbHtml("Taxability", ["Taxable","Exempt"], entry.Taxability)}
         ${lineField("Basis", entry.Basis)}
         <div class="two-col">
           ${lineField("Back Taxes Period — From", entry.PeriodFrom)}
@@ -2328,6 +2462,7 @@ function printMachineryEntry(entry) {
   const html = `
     <div class="doc-title">Field Appraisal and Assessment Sheet &mdash; Machinery</div>
     <div class="doc-subtitle">Office of the Municipal Assessor &middot; San Remigio, Cebu</div>
+    <div class="priv-notice"><b>Data Privacy Notice:</b> By submitting/providing your property information (including but not limited to name, contact details, property address, title number, and property documents), you acknowledge and authorize the government to collect, process, and store your personal data.</div>
 
     <div class="box">
       <div class="box-title">Transaction Information</div>
@@ -2342,7 +2477,7 @@ function printMachineryEntry(entry) {
       <div class="box-title">Owner Information</div>
       <div class="box-body">
         ${lineField("Owner/s Name (as reflected in the CCT)", entry.Owner_Name)}
-        ${cbHtml(["Male","Female"], entry.Owner_Sex)}
+        ${cbHtml("Sex", ["Male","Female"], entry.Owner_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.Owner_TIN)}
           ${lineField("Phone/Mobile No.", entry.Owner_Phone)}
@@ -2388,7 +2523,7 @@ function printMachineryEntry(entry) {
       <div class="box-title">Land Reference</div>
       <div class="box-body two-col">
         ${lineField("Owner/s Name", entry.LandRef_Owner_Name)}
-        ${cbHtml(["Male","Female"], entry.LandRef_Sex)}
+        ${cbHtml("Sex", ["Male","Female"], entry.LandRef_Sex)}
         ${lineField("TIN", entry.LandRef_TIN)}
         ${lineField("Phone/Mobile No.", entry.LandRef_Phone)}
         ${lineField("TD No.", entry.LandRef_TDNo)}
@@ -2399,8 +2534,8 @@ function printMachineryEntry(entry) {
     <div class="box">
       <div class="box-title">Building Reference</div>
       <div class="box-body">
-        ${cbHtml(["Same as Landowner","Administrator","Possessor"], entry.BldgRef_Name_Type)}
-        ${cbHtml(["Male","Female"], entry.BldgRef_Sex)}
+        ${cbHtml("Name", ["Same as Landowner","Administrator","Possessor"], entry.BldgRef_Name_Type)}
+        ${cbHtml("Sex", ["Male","Female"], entry.BldgRef_Sex)}
         <div class="two-col">
           ${lineField("TIN", entry.BldgRef_TIN)}
           ${lineField("Phone No.", entry.BldgRef_Phone)}
@@ -2436,8 +2571,8 @@ function printMachineryEntry(entry) {
       <div class="box-title">Effectivity of Assessment / Reassessment</div>
       <div class="box-body">
         ${lineField("Year", entry.Effectivity_Year)}
-        ${cbHtml(["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
-        ${cbHtml(["Taxable","Exempt"], entry.Taxability)}
+        ${cbHtml("Quarter", ["1st","2nd","3rd","4th"], entry.Effectivity_Quarter)}
+        ${cbHtml("Taxability", ["Taxable","Exempt"], entry.Taxability)}
         ${lineField("Basis", entry.Basis)}
         <div class="two-col">
           ${lineField("Back Taxes Period — From", entry.PeriodFrom)}
