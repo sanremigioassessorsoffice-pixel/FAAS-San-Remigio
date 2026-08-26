@@ -1191,7 +1191,7 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyNamYYbE158f5VLciigmhpKxlhru_DIybDkv5zXgfacuoJppXc1_pQcajSouO1NVWO7w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbynQ6OOgUqwuNexLHzj3BIpbFbIyKt1BNRUJlz1l-FC0_NOJ_GZUjlQvbjfl0jl-7ckUA/exec";
 
 const TABLE_CONFIGS = {
   landAppraisal: { bodyId: "landAppraisalBody", cols: ["classification","subClassification","area","unitValue","marketValue"] },
@@ -1659,30 +1659,29 @@ function exportToExcel() {
 
 const PRINT_FORM_CSS = `
   * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; color: #000; padding: 18px 22px; }
-  .doc-title { text-align: center; font-weight: bold; font-size: 13.5px; margin: 0 0 2px; }
-  .doc-subtitle { text-align: center; font-size: 10px; margin: 0 0 10px; color: #333; }
-  .priv-notice { font-size: 8.8px; border: 1px solid #000; padding: 5px 8px; margin-bottom: 10px; line-height: 1.35; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #000; padding: 0; }
+  .doc-title { text-align: center; font-weight: bold; font-size: 14pt; margin: 0 0 2pt; }
+  .doc-subtitle { text-align: center; font-size: 10.5pt; margin: 0 0 10pt; color: #333; }
+  .priv-notice { font-size: 9pt; border: 1px solid #000; padding: 5pt 8pt; margin-bottom: 10pt; line-height: 1.35; }
   .priv-notice b { font-weight: bold; }
-  .box { border: 1px solid #000; margin-bottom: 8px; page-break-inside: avoid; }
-  .box-title { font-weight: bold; font-size: 10px; border-bottom: 1px solid #000; padding: 3px 8px; text-transform: uppercase; background: #fafafa; }
-  .box-body { padding: 6px 10px; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; }
-  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 16px; }
-  .line-field { font-size: 10.5px; margin-bottom: 5px; display: flex; gap: 4px; align-items: baseline; }
+  .box { border: 1px solid #000; margin-bottom: 7pt; page-break-inside: avoid; }
+  .box-title { font-weight: bold; font-size: 10.5pt; border-bottom: 1px solid #000; padding: 3pt 8pt; text-transform: uppercase; background: #fafafa; }
+  .box-body { padding: 6pt 10pt; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20pt; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 16pt; }
+  .line-field { font-size: 11pt; margin-bottom: 5pt; display: flex; gap: 4pt; align-items: baseline; }
   .line-field .lbl { white-space: nowrap; }
-  .line-field .fill { border-bottom: 1px solid #000; flex: 1; min-height: 12px; padding: 0 3px; word-break: break-word; }
-  .cb-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 10.5px; margin: 3px 0 6px; }
+  .line-field .fill { border-bottom: 1px solid #000; flex: 1; min-height: 12pt; padding: 0 3pt; word-break: break-word; }
+  .cb-row { display: flex; gap: 14pt; flex-wrap: wrap; font-size: 11pt; margin: 3pt 0 6pt; }
   .cb-item { white-space: nowrap; }
-  table.formtable { width: 100%; border-collapse: collapse; margin: 4px 0 2px; }
-  table.formtable th, table.formtable td { border: 1px solid #000; padding: 3px 5px; font-size: 9.3px; text-align: left; }
+  table.formtable { width: 100%; border-collapse: collapse; margin: 4pt 0 2pt; }
+  table.formtable th, table.formtable td { border: 1px solid #000; padding: 3pt 5pt; font-size: 9.5pt; text-align: left; }
   table.formtable th { background: #eee; font-weight: bold; }
-  .total-line { text-align: right; font-size: 10.5px; margin: 3px 0 8px; }
-  .sig-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; }
-  .sig-line { border-top: 1px solid #000; text-align: center; font-size: 9.3px; padding-top: 3px; }
-  .sig-name { font-style: italic; font-size: 10px; min-height: 14px; }
-  .page-break { page-break-before: always; }
-  @page { size: letter; margin: 14mm; }
+  .total-line { text-align: right; font-size: 11pt; margin: 3pt 0 8pt; }
+  .sig-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14pt; margin-top: 14pt; }
+  .sig-line { border-top: 1px solid #000; text-align: center; font-size: 9.5pt; padding-top: 3pt; }
+  .sig-name { font-style: italic; font-size: 10.5pt; min-height: 14pt; }
+  @page { size: A4; margin: 1in; }
 `;
 
 function cbHtml(options, selectedValue) {
@@ -1789,8 +1788,6 @@ function printEntry(entry) {
       </div>
     </div>
 
-    <div class="page-break"></div>
-
     <div class="box">
       <div class="box-title">Land Appraisal</div>
       <div class="box-body">
@@ -1854,8 +1851,6 @@ function printEntry(entry) {
       <div><div class="sig-name">${escapeHtml(entry.AssessedBy)}</div><div class="sig-line">Assessed By &middot; ${escapeHtml(entry.AssessedDate)}</div></div>
       <div><div class="sig-name">${escapeHtml(entry.RecommendingApproval)}</div><div class="sig-line">Recommending Approval By &middot; ${escapeHtml(entry.RecommendingDate)}</div></div>
     </div>
-
-    <div class="page-break"></div>
 
     <div class="box">
       <div class="box-title">Memoranda</div>
@@ -2097,8 +2092,6 @@ function printBuildingEntry(entry) {
       </div>
     </div>
 
-    <div class="page-break"></div>
-
     <div class="box">
       <div class="box-title">General Information</div>
       <div class="box-body">
@@ -2193,8 +2186,6 @@ function printBuildingEntry(entry) {
       <div><div class="sig-name">${escapeHtml(entry.AssessedBy)}</div><div class="sig-line">Assessed By &middot; ${escapeHtml(entry.AssessedDate)}</div></div>
       <div><div class="sig-name">${escapeHtml(entry.RecommendingApproval)}</div><div class="sig-line">Recommending Approval By &middot; ${escapeHtml(entry.RecommendingDate)}</div></div>
     </div>
-
-    <div class="page-break"></div>
 
     <div class="box">
       <div class="box-title">Memoranda</div>
@@ -2418,8 +2409,6 @@ function printMachineryEntry(entry) {
         </div>
       </div>
     </div>
-
-    <div class="page-break"></div>
 
     <div class="box">
       <div class="box-title">Property Appraisal (Part 1)</div>
